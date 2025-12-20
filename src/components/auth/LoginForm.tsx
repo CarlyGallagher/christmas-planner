@@ -35,7 +35,14 @@ export function LoginForm() {
     });
 
     if (signInError) {
-      setError(signInError.message);
+      // Provide friendlier error messages
+      if (signInError.message.includes('Invalid login credentials') || signInError.message.includes('Email not confirmed')) {
+        setError('Invalid email or password. Please try again.');
+      } else if (signInError.message.includes('Email not confirmed')) {
+        setError('Please check your email and confirm your account first.');
+      } else {
+        setError(signInError.message);
+      }
       setLoading(false);
       return;
     }

@@ -40,7 +40,16 @@ export function SignupForm() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Provide friendlier error messages
+      if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
+        setError('This email is already registered. Try logging in instead.');
+      } else if (signUpError.message.includes('Invalid email')) {
+        setError('Please enter a valid email address.');
+      } else if (signUpError.message.includes('Password')) {
+        setError('Password must be at least 8 characters with no spaces.');
+      } else {
+        setError(signUpError.message);
+      }
       setLoading(false);
       return;
     }

@@ -19,6 +19,8 @@ export interface Wishlist {
   user_id: string;
   name: string;
   is_shared: boolean;
+  hide_purchased?: boolean;
+  share_token?: string | null;
   created_at: string;
   updated_at: string;
 }

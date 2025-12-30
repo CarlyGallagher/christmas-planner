@@ -11,8 +11,10 @@ import { CreateEventDialog } from '@/components/calendar/CreateEventDialog';
 import { EventDetailsDialog } from '@/components/calendar/EventDetailsDialog';
 import { DayEventsDialog } from '@/components/calendar/DayEventsDialog';
 import { CalendarViewSettings, CalendarView } from '@/components/calendar/CalendarViewSettings';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 export default function CalendarPage() {
+  const { getPreference, updatePreferences, loading: prefsLoading } = useUserPreferences();
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -21,16 +23,7 @@ export default function CalendarPage() {
     const diff = today.getDate() - day;
     return new Date(today.setDate(diff));
   });
-  const [calendarView, setCalendarView] = useState<CalendarView>(() => {
-    // Load saved view preference from localStorage
-    if (typeof window !== 'undefined') {
-      const savedView = localStorage.getItem('calendarView');
-      if (savedView === 'year' || savedView === 'month' || savedView === 'week') {
-        return savedView as CalendarView;
-      }
-    }
-    return 'year';
-  });
+  const [calendarView, setCalendarView] = useState<CalendarView>('year');
   const [showViewSettings, setShowViewSettings] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,10 +52,18 @@ export default function CalendarPage() {
     }
   }, [searchQuery, events]);
 
-  // Save calendar view preference to localStorage
+  // Load calendar view preference when preferences are ready
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('calendarView', calendarView);
+    if (!prefsLoading) {
+      const savedView = getPreference<CalendarView>('calendarView', 'year');
+      setCalendarView(savedView);
+    }
+  }, [prefsLoading]);
+
+  // Save calendar view preference to database and localStorage
+  useEffect(() => {
+    if (!prefsLoading) {
+      updatePreferences({ calendarView });
     }
   }, [calendarView]);
 
@@ -224,7 +225,7 @@ export default function CalendarPage() {
           <div className="space-y-1 pointer-events-none overflow-hidden max-h-[calc(100%-2rem)]">
             {dayEvents.length > 0 && (
               <>
-                {dayEvents.slice(0, 2).map((event) => (
+                {dayEvents.slice(0, 1).map((event) => (
                   <div
                     key={event.id}
                     className="text-xs px-1 py-0.5 rounded truncate leading-tight"
@@ -233,8 +234,8 @@ export default function CalendarPage() {
                     {event.title}
                   </div>
                 ))}
-                {dayEvents.length > 2 && (
-                  <div className="text-xs text-gray-500 font-medium px-1">+{dayEvents.length - 2} more</div>
+                {dayEvents.length > 1 && (
+                  <div className="text-xs text-gray-500 font-medium px-1">+{dayEvents.length - 1} more</div>
                 )}
               </>
             )}

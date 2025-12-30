@@ -209,7 +209,7 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className={`h-24 border border-gray-200 p-2 cursor-pointer hover:bg-gray-50 ${
+          className={`h-24 border border-gray-200 p-2 cursor-pointer hover:bg-gray-50 overflow-hidden ${
             isToday ? 'bg-blue-50' : ''
           }`}
           onClick={() => {
@@ -221,18 +221,18 @@ export default function CalendarPage() {
           <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-600' : ''}`}>
             {day}
           </div>
-          <div className="space-y-1 pointer-events-none">
+          <div className="space-y-1 pointer-events-none overflow-hidden">
             {dayEvents.slice(0, 3).map((event) => (
               <div
                 key={event.id}
-                className="text-xs px-1 py-0.5 rounded truncate"
+                className="text-xs px-1 py-0.5 rounded truncate leading-tight"
                 style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
               >
                 {event.title}
               </div>
             ))}
             {dayEvents.length > 3 && (
-              <div className="text-xs text-gray-500">+{dayEvents.length - 3} more</div>
+              <div className="text-xs text-gray-500 font-medium">+{dayEvents.length - 3} more</div>
             )}
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className={`h-20 border border-gray-200 p-1 cursor-pointer hover:bg-gray-50 ${
+          className={`h-20 border border-gray-200 p-1 cursor-pointer hover:bg-gray-50 overflow-hidden ${
             isToday ? 'bg-blue-50' : ''
           }`}
           onClick={() => {
@@ -305,18 +305,18 @@ export default function CalendarPage() {
           <div className={`text-sm font-semibold ${isToday ? 'text-blue-600' : ''}`}>
             {day}
           </div>
-          <div className="space-y-0.5 mt-1 pointer-events-none">
+          <div className="space-y-0.5 mt-1 pointer-events-none overflow-hidden">
             {dayEvents.slice(0, 2).map(event => (
               <div
                 key={event.id}
-                className="text-xs px-1 py-0.5 rounded truncate"
+                className="text-xs px-1 py-0.5 rounded truncate leading-tight"
                 style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
               >
                 {event.title}
               </div>
             ))}
             {dayEvents.length > 2 && (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 font-medium">
                 +{dayEvents.length - 2} more
               </div>
             )}

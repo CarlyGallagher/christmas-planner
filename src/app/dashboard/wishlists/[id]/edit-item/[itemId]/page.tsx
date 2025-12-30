@@ -124,6 +124,25 @@ export default function EditItemPage() {
       return;
     }
 
+    // Verify ownership of the wishlist
+    const { data: wishlist, error: wishlistError } = await supabase
+      .from('wishlists')
+      .select('user_id')
+      .eq('id', wishlistId)
+      .single();
+
+    if (wishlistError || !wishlist) {
+      setError('Wishlist not found');
+      setLoading(false);
+      return;
+    }
+
+    if (wishlist.user_id !== user.id) {
+      setError('You do not have permission to edit items in this wishlist');
+      setLoading(false);
+      return;
+    }
+
     let imageUrl = existingImageUrl;
 
     // Upload new image if provided
@@ -261,6 +280,7 @@ export default function EditItemPage() {
                 placeholder="0.00"
                 {...register('price', { valueAsNumber: true })}
                 disabled={loading}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               {errors.price && (
                 <p className="text-sm text-red-500">{errors.price.message}</p>

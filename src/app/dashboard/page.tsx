@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,6 +15,19 @@ export default async function DashboardPage() {
     .eq('id', user?.id)
     .single();
 
+  // Get wishlists count (owned + shared)
+  const { data: ownedWishlists } = await supabase
+    .from('wishlists')
+    .select('id')
+    .eq('user_id', user?.id);
+
+  const { data: sharedWishlists } = await supabase
+    .from('wishlist_shares')
+    .select('id')
+    .eq('shared_with_user_id', user?.id);
+
+  const totalWishlists = (ownedWishlists?.length || 0) + (sharedWishlists?.length || 0);
+
   return (
     <div className="space-y-6">
       <div>
@@ -22,16 +36,18 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Wishlists</CardTitle>
-            <CardDescription>Manage your wish lists</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">0</p>
-            <p className="text-sm text-gray-600">Total wishlists</p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/wishlists">
+          <Card className="cursor-pointer hover:bg-gray-50 transition-colors">
+            <CardHeader>
+              <CardTitle>Wishlists</CardTitle>
+              <CardDescription>Manage your wish lists</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{totalWishlists}</p>
+              <p className="text-sm text-gray-600">Total wishlists</p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card>
           <CardHeader>

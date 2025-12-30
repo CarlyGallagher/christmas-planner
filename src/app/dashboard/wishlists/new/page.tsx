@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Globe, Lock } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewWishlistPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -59,6 +60,7 @@ export default function NewWishlistPage() {
         name: data.name,
         user_id: user.id,
         is_shared: false,
+        is_public: isPublic,
       })
       .select()
       .single();
@@ -106,6 +108,49 @@ export default function NewWishlistPage() {
               {errors.name && (
                 <p className="text-sm text-red-500">{errors.name.message}</p>
               )}
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Visibility</Label>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(false)}
+                  disabled={loading}
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg text-left transition-colors ${
+                    !isPublic
+                      ? 'border-green-600 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Lock className={`h-5 w-5 mt-0.5 ${!isPublic ? 'text-green-600' : 'text-gray-400'}`} />
+                  <div className="flex-1">
+                    <div className="font-semibold">Private</div>
+                    <div className="text-sm text-gray-600">
+                      Only you and people you explicitly share with can see this wishlist
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(true)}
+                  disabled={loading}
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg text-left transition-colors ${
+                    isPublic
+                      ? 'border-green-600 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Globe className={`h-5 w-5 mt-0.5 ${isPublic ? 'text-green-600' : 'text-gray-400'}`} />
+                  <div className="flex-1">
+                    <div className="font-semibold">Public</div>
+                    <div className="text-sm text-gray-600">
+                      Anyone with the link can view this wishlist
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {error && (

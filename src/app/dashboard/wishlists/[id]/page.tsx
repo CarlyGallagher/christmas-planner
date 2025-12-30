@@ -33,14 +33,25 @@ export default function WishlistDetailPage() {
   const params = useParams();
   const router = useRouter();
   const wishlistId = params.id as string;
-  const { wishlists, loading: wishlistsLoading } = useWishlists();
-  const { items, loading: itemsLoading, refetch } = useWishlistItems(wishlistId);
+  const { wishlists, sharedWishlists, loading: wishlistsLoading, refetch: refetchWishlists } = useWishlists();
+  const { items, loading: itemsLoading, refetch: refetchItems } = useWishlistItems(wishlistId);
   const [deleting, setDeleting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const supabase = createClient();
 
-  const wishlist = wishlists.find((w) => w.id === wishlistId);
+  // Check both owned and shared wishlists
+  const wishlist = wishlists.find((w) => w.id === wishlistId) || sharedWishlists.find((w) => w.id === wishlistId);
   const isOwner = currentUserId === wishlist?.user_id;
+
+  // Handler to refetch both wishlists and items
+  const handleUpdate = () => {
+    refetchWishlists();
+    refetchItems();
+  };
+
+  // Don't filter items - always show all items
+  // The "hide purchased" setting only hides the visual indicators, not the items themselves
+  const displayItems = items;
 
   // Sensors for drag and drop (desktop, touch, and keyboard)
   const sensors = useSensors(
@@ -90,7 +101,7 @@ export default function WishlistDetailPage() {
         .eq('id', update.id);
     }
 
-    refetch();
+    refetchItems();
   };
 
   const handleDeleteWishlist = async () => {
@@ -157,9 +168,9 @@ export default function WishlistDetailPage() {
                   wishlistId={wishlistId}
                   wishlistName={wishlist.name}
                   shareToken={wishlist.share_token}
-                  onUpdate={refetch}
+                  onUpdate={handleUpdate}
                 />
-                <WishlistSettings wishlist={wishlist} onUpdate={refetch} />
+                <WishlistSettings wishlist={wishlist} onUpdate={handleUpdate} />
                 <Button
                   variant="destructive"
                   size="sm"
@@ -176,28 +187,32 @@ export default function WishlistDetailPage() {
       </div>
 
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Items ({items.length})</h2>
-        <Link href={`/dashboard/wishlists/${wishlistId}/add-item`}>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Item
-          </Button>
-        </Link>
+        <h2 className="text-xl font-semibold">Items ({displayItems.length})</h2>
+        {isOwner && (
+          <Link href={`/dashboard/wishlists/${wishlistId}/add-item`}>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Item
+            </Button>
+          </Link>
+        )}
       </div>
 
-      {items.length === 0 ? (
+      {displayItems.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <h3 className="text-lg font-semibold mb-2">No items yet</h3>
             <p className="text-gray-600 mb-4 text-center">
-              Add items to your wishlist to start tracking your Christmas wishes
+              {isOwner ? 'Add items to your wishlist to start tracking your Christmas wishes' : 'This wishlist has no items yet'}
             </p>
-            <Link href={`/dashboard/wishlists/${wishlistId}/add-item`}>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add First Item
-              </Button>
-            </Link>
+            {isOwner && (
+              <Link href={`/dashboard/wishlists/${wishlistId}/add-item`}>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Item
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       ) : isOwner ? (
@@ -211,17 +226,17 @@ export default function WishlistDetailPage() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={items.map((item) => item.id)}
+              items={displayItems.map((item) => item.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className="grid gap-4 md:grid-cols-2">
-                {items.map((item, index) => (
+                {displayItems.map((item, index) => (
                   <SortableItem
                     key={item.id}
                     item={item}
                     isOwner={isOwner}
                     hidePurchased={wishlist.hide_purchased ?? false}
-                    onUpdate={refetch}
+                    onUpdate={refetchItems}
                     rank={index + 1}
                   />
                 ))}
@@ -231,13 +246,13 @@ export default function WishlistDetailPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {items.map((item) => (
+          {displayItems.map((item) => (
             <WishlistItemCard
               key={item.id}
               item={item}
               isOwner={isOwner}
               hidePurchased={false}
-              onUpdate={refetch}
+              onUpdate={refetchItems}
             />
           ))}
         </div>

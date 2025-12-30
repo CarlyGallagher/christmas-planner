@@ -67,12 +67,17 @@ export default function CalendarPage() {
 
   const getEventsForDate = (date: Date): CalendarEvent[] => {
     return events.filter(event => {
-      const eventDate = new Date(event.start_date);
-      return (
-        eventDate.getFullYear() === date.getFullYear() &&
-        eventDate.getMonth() === date.getMonth() &&
-        eventDate.getDate() === date.getDate()
-      );
+      const eventStart = new Date(event.start_date);
+      const eventEnd = new Date(event.end_date);
+      const checkDate = new Date(date);
+
+      // Reset time to midnight for date comparison
+      eventStart.setHours(0, 0, 0, 0);
+      eventEnd.setHours(23, 59, 59, 999);
+      checkDate.setHours(12, 0, 0, 0);
+
+      // Event is visible on this date if the date falls between start and end
+      return checkDate >= eventStart && checkDate <= eventEnd;
     });
   };
 

@@ -53,13 +53,22 @@ export function EventDetailsDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(event.title);
   const [description, setDescription] = useState(event.description || '');
-  const [date, setDate] = useState(event.start_date.split('T')[0]);
+  const [startDate, setStartDate] = useState(event.start_date.split('T')[0]);
+  const [endDate, setEndDate] = useState(event.end_date.split('T')[0]);
   const [startTime, setStartTime] = useState(
     new Date(event.start_date).toTimeString().slice(0, 5)
   );
   const [endTime, setEndTime] = useState(
     new Date(event.end_date).toTimeString().slice(0, 5)
   );
+  const [isMultiDay, setIsMultiDay] = useState(() => {
+    // Check if event spans multiple days
+    const start = new Date(event.start_date);
+    const end = new Date(event.end_date);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    return start.getTime() !== end.getTime();
+  });
   const [color, setColor] = useState(event.color || '#3b82f6');
   const [recurrence, setRecurrence] = useState(event.recurrence_rule || '');
   const [reminderMinutes, setReminderMinutes] = useState<number | ''>(
@@ -74,16 +83,18 @@ export function EventDetailsDialog({
     setLoading(true);
     setError(null);
 
-    const startDate = new Date(`${date}T${startTime}`).toISOString();
-    const endDate = new Date(`${date}T${endTime}`).toISOString();
+    const eventStartDate = new Date(`${startDate}T${startTime}`).toISOString();
+    const eventEndDate = isMultiDay
+      ? new Date(`${endDate}T${endTime}`).toISOString()
+      : new Date(`${startDate}T${endTime}`).toISOString();
 
     const { error: updateError } = await supabase
       .from('calendar_events')
       .update({
         title,
         description: description || null,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: eventStartDate,
+        end_date: eventEndDate,
         is_recurring: !!recurrence,
         recurrence_rule: recurrence || null,
         reminder_minutes: reminderMinutes || null,
@@ -231,43 +242,120 @@ export function EventDetailsDialog({
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-date">Date *</Label>
-                <Input
-                  id="edit-date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  id="edit-multiDay"
+                  type="checkbox"
+                  checked={isMultiDay}
+                  onChange={(e) => {
+                    setIsMultiDay(e.target.checked);
+                    if (!e.target.checked) {
+                      setEndDate(startDate);
+                    }
+                  }}
                   disabled={loading}
+                  className="h-4 w-4 rounded border-gray-300"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-startTime">Start Time *</Label>
-                <Input
-                  id="edit-startTime"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-endTime">End Time *</Label>
-                <Input
-                  id="edit-endTime"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  required
-                  disabled={loading}
-                />
+                <Label htmlFor="edit-multiDay" className="font-normal">
+                  Multi-day event
+                </Label>
               </div>
             </div>
+
+            {isMultiDay ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-startDate">Start Date *</Label>
+                  <Input
+                    id="edit-startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-endDate">End Date *</Label>
+                  <Input
+                    id="edit-endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                    disabled={loading}
+                    min={startDate}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-startTime">Start Time *</Label>
+                  <Input
+                    id="edit-startTime"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-endTime">End Time *</Label>
+                  <Input
+                    id="edit-endTime"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-singleDate">Date *</Label>
+                  <Input
+                    id="edit-singleDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setEndDate(e.target.value);
+                    }}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-startTime">Start Time *</Label>
+                  <Input
+                    id="edit-startTime"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-endTime">End Time *</Label>
+                  <Input
+                    id="edit-endTime"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Color</Label>

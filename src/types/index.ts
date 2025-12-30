@@ -19,6 +19,7 @@ export interface Wishlist {
   user_id: string;
   name: string;
   is_shared: boolean;
+  is_public: boolean;
   hide_purchased?: boolean;
   share_token?: string | null;
   created_at: string;
@@ -49,6 +50,7 @@ export interface CalendarEvent {
   is_recurring: boolean;
   recurrence_rule?: string;
   reminder_minutes?: number;
+  color?: string;
   created_by: string;
   created_at: string;
 }

@@ -59,6 +59,33 @@ export function WishlistItemCard({ item, isOwner, hidePurchased = false, onUpdat
 
     setLoading(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert('You must be logged in to delete items');
+      setLoading(false);
+      return;
+    }
+
+    // Verify ownership of the wishlist
+    const { data: wishlist, error: wishlistError } = await supabase
+      .from('wishlists')
+      .select('user_id')
+      .eq('id', item.wishlist_id)
+      .single();
+
+    if (wishlistError || !wishlist) {
+      alert('Wishlist not found');
+      setLoading(false);
+      return;
+    }
+
+    if (wishlist.user_id !== user.id) {
+      alert('You do not have permission to delete items from this wishlist');
+      setLoading(false);
+      return;
+    }
+
     // Delete image from storage if it exists
     if (item.image_url) {
       const fileName = item.image_url.split('/').slice(-3).join('/');
@@ -137,16 +164,18 @@ export function WishlistItemCard({ item, isOwner, hidePurchased = false, onUpdat
         {/* Bottom section - Buttons */}
         <CardContent className="pt-0">
           <div className="flex gap-2 pt-2">
-            <Button
-              onClick={handleTogglePurchased}
-              disabled={loading}
-              variant={item.is_purchased ? 'outline' : 'default'}
-              size="sm"
-              className="flex-1"
-            >
-              <Check className="mr-1 h-4 w-4" />
-              {item.is_purchased ? 'Unmark' : 'Mark Purchased'}
-            </Button>
+            {!isOwner && (
+              <Button
+                onClick={handleTogglePurchased}
+                disabled={loading}
+                variant={item.is_purchased ? 'outline' : 'default'}
+                size="sm"
+                className="flex-1"
+              >
+                <Check className="mr-1 h-4 w-4" />
+                {item.is_purchased ? 'Unmark' : 'Mark Purchased'}
+              </Button>
+            )}
             {isOwner && (
               <>
                 <Link href={`/dashboard/wishlists/${item.wishlist_id}/edit-item/${item.id}`}>

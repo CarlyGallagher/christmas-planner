@@ -6,6 +6,7 @@ import type { Wishlist, WishlistItem } from '@/types';
 
 export function useWishlists() {
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
+  const [sharedWishlists, setSharedWishlists] = useState<Wishlist[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -18,15 +19,38 @@ export function useWishlists() {
       return;
     }
 
-    // Get user's wishlists - RLS policies handle access control
-    const { data, error } = await supabase
+    // Get user's owned wishlists
+    const { data: ownedData, error: ownedError } = await supabase
       .from('wishlists')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setWishlists(data);
+    if (!ownedError && ownedData) {
+      setWishlists(ownedData);
     }
+
+    // Get wishlists shared with the user
+    // First get the wishlist IDs from wishlist_shares
+    const { data: shareData, error: shareError } = await supabase
+      .from('wishlist_shares')
+      .select('wishlist_id')
+      .eq('shared_with_user_id', user.id);
+
+    if (!shareError && shareData && shareData.length > 0) {
+      // Then fetch the actual wishlist data using those IDs
+      const wishlistIds = shareData.map(share => share.wishlist_id);
+      const { data: sharedData, error: sharedError } = await supabase
+        .from('wishlists')
+        .select('*')
+        .in('id', wishlistIds)
+        .order('created_at', { ascending: false });
+
+      if (!sharedError && sharedData) {
+        setSharedWishlists(sharedData);
+      }
+    }
+
     setLoading(false);
   };
 
@@ -34,7 +58,7 @@ export function useWishlists() {
     fetchWishlists();
   }, []);
 
-  return { wishlists, loading, refetch: fetchWishlists };
+  return { wishlists, sharedWishlists, loading, refetch: fetchWishlists };
 }
 
 export function useWishlistItems(wishlistId: string) {

@@ -221,18 +221,22 @@ export default function CalendarPage() {
           <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-600' : ''}`}>
             {day}
           </div>
-          <div className="space-y-1 pointer-events-none overflow-hidden">
-            {dayEvents.slice(0, 3).map((event) => (
-              <div
-                key={event.id}
-                className="text-xs px-1 py-0.5 rounded truncate leading-tight"
-                style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
-              >
-                {event.title}
-              </div>
-            ))}
-            {dayEvents.length > 3 && (
-              <div className="text-xs text-gray-500 font-medium">+{dayEvents.length - 3} more</div>
+          <div className="space-y-1 pointer-events-none overflow-hidden max-h-[calc(100%-2rem)]">
+            {dayEvents.length > 0 && (
+              <>
+                {dayEvents.slice(0, Math.min(3, dayEvents.length)).map((event) => (
+                  <div
+                    key={event.id}
+                    className="text-xs px-1 py-0.5 rounded truncate leading-tight"
+                    style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+                {dayEvents.length > 3 && (
+                  <div className="text-xs text-gray-500 font-medium px-1">+{dayEvents.length - 3} more</div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -305,20 +309,24 @@ export default function CalendarPage() {
           <div className={`text-sm font-semibold ${isToday ? 'text-blue-600' : ''}`}>
             {day}
           </div>
-          <div className="space-y-0.5 mt-1 pointer-events-none overflow-hidden">
-            {dayEvents.slice(0, 2).map(event => (
-              <div
-                key={event.id}
-                className="text-xs px-1 py-0.5 rounded truncate leading-tight"
-                style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
-              >
-                {event.title}
-              </div>
-            ))}
-            {dayEvents.length > 2 && (
-              <div className="text-xs text-gray-500 font-medium">
-                +{dayEvents.length - 2} more
-              </div>
+          <div className="space-y-0.5 mt-1 pointer-events-none overflow-hidden max-h-[calc(100%-1.5rem)]">
+            {dayEvents.length > 0 && (
+              <>
+                {dayEvents.slice(0, Math.min(2, dayEvents.length)).map(event => (
+                  <div
+                    key={event.id}
+                    className="text-xs px-1 py-0.5 rounded truncate leading-tight"
+                    style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+                {dayEvents.length > 2 && (
+                  <div className="text-xs text-gray-500 font-medium px-1">
+                    +{dayEvents.length - 2} more
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

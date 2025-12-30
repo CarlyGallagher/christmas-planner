@@ -224,7 +224,7 @@ export default function CalendarPage() {
           <div className="space-y-1 pointer-events-none overflow-hidden max-h-[calc(100%-2rem)]">
             {dayEvents.length > 0 && (
               <>
-                {dayEvents.slice(0, Math.min(3, dayEvents.length)).map((event) => (
+                {dayEvents.slice(0, 2).map((event) => (
                   <div
                     key={event.id}
                     className="text-xs px-1 py-0.5 rounded truncate leading-tight"
@@ -233,8 +233,8 @@ export default function CalendarPage() {
                     {event.title}
                   </div>
                 ))}
-                {dayEvents.length > 3 && (
-                  <div className="text-xs text-gray-500 font-medium px-1">+{dayEvents.length - 3} more</div>
+                {dayEvents.length > 2 && (
+                  <div className="text-xs text-gray-500 font-medium px-1">+{dayEvents.length - 2} more</div>
                 )}
               </>
             )}
@@ -312,7 +312,7 @@ export default function CalendarPage() {
           <div className="space-y-0.5 mt-1 pointer-events-none overflow-hidden max-h-[calc(100%-1.5rem)]">
             {dayEvents.length > 0 && (
               <>
-                {dayEvents.slice(0, Math.min(2, dayEvents.length)).map(event => (
+                {dayEvents.slice(0, 1).map(event => (
                   <div
                     key={event.id}
                     className="text-xs px-1 py-0.5 rounded truncate leading-tight"
@@ -321,9 +321,9 @@ export default function CalendarPage() {
                     {event.title}
                   </div>
                 ))}
-                {dayEvents.length > 2 && (
+                {dayEvents.length > 1 && (
                   <div className="text-xs text-gray-500 font-medium px-1">
-                    +{dayEvents.length - 2} more
+                    +{dayEvents.length - 1} more
                   </div>
                 )}
               </>

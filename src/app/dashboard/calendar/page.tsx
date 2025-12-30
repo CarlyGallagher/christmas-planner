@@ -1,0 +1,267 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { CalendarEvent } from '@/types';
+import { CreateEventDialog } from '@/components/calendar/CreateEventDialog';
+import { EventDetailsDialog } from '@/components/calendar/EventDetailsDialog';
+
+export default function CalendarPage() {
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    fetchEvents();
+  }, [currentYear]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const filtered = events.filter(event =>
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (event.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredEvents(filtered);
+    } else {
+      setFilteredEvents([]);
+    }
+  }, [searchQuery, events]);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // For now, we'll fetch all events for the user
+    // In production, you'd want to filter by calendar_id
+    const startOfYear = new Date(currentYear, 0, 1).toISOString();
+    const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59).toISOString();
+
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .gte('start_date', startOfYear)
+      .lte('start_date', endOfYear)
+      .order('start_date', { ascending: true });
+
+    if (!error && data) {
+      setEvents(data);
+    }
+
+    setLoading(false);
+  };
+
+  const getEventsForDate = (date: Date): CalendarEvent[] => {
+    return events.filter(event => {
+      const eventDate = new Date(event.start_date);
+      return (
+        eventDate.getFullYear() === date.getFullYear() &&
+        eventDate.getMonth() === date.getMonth() &&
+        eventDate.getDate() === date.getDate()
+      );
+    });
+  };
+
+  const renderMonth = (monthIndex: number) => {
+    const firstDay = new Date(currentYear, monthIndex, 1);
+    const lastDay = new Date(currentYear, monthIndex + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const days = [];
+
+    // Add empty cells for days before the month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(<div key={`empty-${i}`} className="h-20 border border-gray-100"></div>);
+    }
+
+    // Add cells for each day of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentYear, monthIndex, day);
+      const dayEvents = getEventsForDate(date);
+      const isToday =
+        date.getDate() === new Date().getDate() &&
+        date.getMonth() === new Date().getMonth() &&
+        date.getFullYear() === new Date().getFullYear();
+
+      days.push(
+        <div
+          key={day}
+          className={`h-20 border border-gray-200 p-1 cursor-pointer hover:bg-gray-50 ${
+            isToday ? 'bg-blue-50' : ''
+          }`}
+          onClick={() => {
+            setSelectedDate(date);
+            setShowCreateDialog(true);
+          }}
+        >
+          <div className={`text-sm font-semibold ${isToday ? 'text-blue-600' : ''}`}>
+            {day}
+          </div>
+          <div className="space-y-0.5 mt-1">
+            {dayEvents.slice(0, 2).map(event => (
+              <div
+                key={event.id}
+                className="text-xs px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80"
+                style={{ backgroundColor: event.color || '#3b82f6', color: 'white' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedEvent(event);
+                }}
+              >
+                {event.title}
+              </div>
+            ))}
+            {dayEvents.length > 2 && (
+              <div className="text-xs text-gray-500">
+                +{dayEvents.length - 2} more
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Card key={monthIndex} className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">{monthNames[monthIndex]}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-0">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-sm font-semibold py-2 border-b">
+                {day}
+              </div>
+            ))}
+            {days}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-gray-500">Loading calendar...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold">Calendar {currentYear}</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentYear(currentYear - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentYear(new Date().getFullYear())}
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentYear(currentYear + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <Button onClick={() => {
+          setSelectedDate(new Date());
+          setShowCreateDialog(true);
+        }}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Event
+        </Button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="Search events..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+        {filteredEvents.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto z-10">
+            {filteredEvents.map(event => (
+              <div
+                key={event.id}
+                className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                onClick={() => {
+                  setSelectedEvent(event);
+                  setSearchQuery('');
+                }}
+              >
+                <div className="font-semibold">{event.title}</div>
+                <div className="text-sm text-gray-600">
+                  {new Date(event.start_date).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Calendar Grid - 3 months per row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        {Array.from({ length: 12 }, (_, i) => renderMonth(i))}
+      </div>
+
+      {/* Dialogs */}
+      {showCreateDialog && (
+        <CreateEventDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          selectedDate={selectedDate}
+          onEventCreated={fetchEvents}
+        />
+      )}
+
+      {selectedEvent && (
+        <EventDetailsDialog
+          event={selectedEvent}
+          open={!!selectedEvent}
+          onOpenChange={(open) => !open && setSelectedEvent(null)}
+          onEventUpdated={fetchEvents}
+          onEventDeleted={fetchEvents}
+        />
+      )}
+    </div>
+  );
+}

@@ -21,7 +21,16 @@ export default function CalendarPage() {
     const diff = today.getDate() - day;
     return new Date(today.setDate(diff));
   });
-  const [calendarView, setCalendarView] = useState<CalendarView>('year');
+  const [calendarView, setCalendarView] = useState<CalendarView>(() => {
+    // Load saved view preference from localStorage
+    if (typeof window !== 'undefined') {
+      const savedView = localStorage.getItem('calendarView');
+      if (savedView === 'year' || savedView === 'month' || savedView === 'week') {
+        return savedView as CalendarView;
+      }
+    }
+    return 'year';
+  });
   const [showViewSettings, setShowViewSettings] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +58,13 @@ export default function CalendarPage() {
       setFilteredEvents([]);
     }
   }, [searchQuery, events]);
+
+  // Save calendar view preference to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('calendarView', calendarView);
+    }
+  }, [calendarView]);
 
   const fetchEvents = async () => {
     setLoading(true);

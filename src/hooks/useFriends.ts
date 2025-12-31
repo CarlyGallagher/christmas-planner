@@ -235,6 +235,28 @@ export function useFriends() {
 
   useEffect(() => {
     fetchFriends();
+
+    // Subscribe to real-time changes on the friends table
+    const channel = supabase
+      .channel('friends-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friends',
+        },
+        () => {
+          // Re-fetch friends when any change occurs
+          fetchFriends();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {

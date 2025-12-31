@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Plus, Calendar, Users } from 'lucide-react';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,6 +17,28 @@ export default async function DashboardPage() {
     .eq('id', user?.id)
     .single();
 
+  // Get wishlists count
+  const { count: wishlistsCount } = await supabase
+    .from('wishlists')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user?.id);
+
+  // Get upcoming events count (events that haven't ended yet)
+  const today = new Date().toISOString();
+  const { count: eventsCount } = await supabase
+    .from('calendar_events')
+    .select('*', { count: 'exact', head: true })
+    .gte('end_date', today);
+
+  // Get friends count (accepted friends where user is either user_id or friend_id)
+  const { data: friendsData } = await supabase
+    .from('friends')
+    .select('id')
+    .eq('status', 'accepted')
+    .or(`user_id.eq.${user?.id},friend_id.eq.${user?.id}`);
+
+  const friendsCount = friendsData?.length || 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -27,9 +52,15 @@ export default async function DashboardPage() {
             <CardTitle>Wishlists</CardTitle>
             <CardDescription>Manage your wish lists</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">0</p>
+          <CardContent className="space-y-3">
+            <p className="text-2xl font-bold">{wishlistsCount || 0}</p>
             <p className="text-sm text-gray-600">Total wishlists</p>
+            <Link href="/dashboard/wishlists">
+              <Button size="sm" className="w-full">
+                <Plus className="mr-1 h-4 w-4" />
+                New Wishlist
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
@@ -38,20 +69,32 @@ export default async function DashboardPage() {
             <CardTitle>Events</CardTitle>
             <CardDescription>Upcoming events</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">0</p>
+          <CardContent className="space-y-3">
+            <p className="text-2xl font-bold">{eventsCount || 0}</p>
             <p className="text-sm text-gray-600">Upcoming events</p>
+            <Link href="/dashboard/calendar">
+              <Button size="sm" className="w-full">
+                <Calendar className="mr-1 h-4 w-4" />
+                View Calendar
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Reminders</CardTitle>
-            <CardDescription>Active notifications</CardDescription>
+            <CardTitle>Friends</CardTitle>
+            <CardDescription>Your connections</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">0</p>
-            <p className="text-sm text-gray-600">Pending reminders</p>
+          <CardContent className="space-y-3">
+            <p className="text-2xl font-bold">{friendsCount}</p>
+            <p className="text-sm text-gray-600">Total friends</p>
+            <Link href="/dashboard/friends">
+              <Button size="sm" className="w-full">
+                <Users className="mr-1 h-4 w-4" />
+                Manage Friends
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

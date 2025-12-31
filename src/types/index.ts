@@ -66,3 +66,17 @@ export interface Notification {
   sent_at?: string;
   created_at: string;
 }
+
+export interface Friend {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: 'pending' | 'accepted' | 'declined' | 'blocked';
+  created_at: string;
+  updated_at: string;
+  friend_profile?: Profile;
+}
+
+export interface FriendWithProfile extends Friend {
+  friend_profile: Profile;
+}

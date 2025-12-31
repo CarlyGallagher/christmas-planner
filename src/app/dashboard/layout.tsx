@@ -18,6 +18,13 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  // Get pending friend requests count
+  const { count: pendingRequestsCount } = await supabase
+    .from('friends')
+    .select('*', { count: 'exact', head: true })
+    .eq('friend_id', user.id)
+    .eq('status', 'pending');
+
   const handleSignOut = async () => {
     'use server';
     const supabase = await createClient();
@@ -43,6 +50,14 @@ export default async function DashboardLayout({
               </Link>
               <Link href="/dashboard/calendar" className="text-sm font-medium hover:text-green-600">
                 Calendar
+              </Link>
+              <Link href="/dashboard/friends" className="text-sm font-medium hover:text-green-600 flex items-center gap-1">
+                Friends
+                {pendingRequestsCount !== null && pendingRequestsCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {pendingRequestsCount}
+                  </span>
+                )}
               </Link>
             </nav>
           </div>

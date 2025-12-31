@@ -3,6 +3,7 @@
 
 -- Drop the existing policy
 DROP POLICY IF EXISTS "Users can view items from accessible wishlists" ON wishlist_items;
+DROP POLICY IF EXISTS "users_view_items_from_accessible_wishlists" ON wishlist_items;
 
 -- Create a new policy using EXISTS to avoid recursion issues
 CREATE POLICY "users_view_items_from_accessible_wishlists"

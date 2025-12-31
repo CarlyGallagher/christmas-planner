@@ -3,6 +3,7 @@
 
 -- Drop the existing policy
 DROP POLICY IF EXISTS "Users can update items in their wishlists or mark as purchased" ON wishlist_items;
+DROP POLICY IF EXISTS "users_update_items_in_accessible_wishlists" ON wishlist_items;
 
 -- Create a new policy using EXISTS to avoid recursion issues
 CREATE POLICY "users_update_items_in_accessible_wishlists"

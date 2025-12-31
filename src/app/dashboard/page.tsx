@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Calendar, Users } from 'lucide-react';
+import { WeekView } from '@/components/dashboard/WeekView';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -99,19 +100,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Get started with your planning</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-gray-600">
-            🎁 Create your first wishlist<br />
-            📅 Add a Christmas event to your calendar<br />
-            👨‍👩‍👧‍👦 Share your plans with family
-          </p>
-        </CardContent>
-      </Card>
+      <WeekView />
     </div>
   );
 }

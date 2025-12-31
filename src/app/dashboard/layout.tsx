@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { ProfileDropdown } from '@/components/dashboard/ProfileDropdown';
+import { MobileNav } from '@/components/dashboard/MobileNav';
 
 export default async function DashboardLayout({
   children,
@@ -25,22 +26,27 @@ export default async function DashboardLayout({
     .eq('friend_id', user.id)
     .eq('status', 'pending');
 
-  const handleSignOut = async () => {
-    'use server';
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect('/login');
-  };
+  // Get user profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header/Navigation */}
       <header className="border-b bg-white">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu Button */}
+            <MobileNav pendingRequestsCount={pendingRequestsCount} />
+
             <Link href="/dashboard" className="text-xl font-bold text-green-600">
               🎄 Christmas Planner
             </Link>
+
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex gap-4">
               <Link href="/dashboard" className="text-sm font-medium hover:text-green-600">
                 Dashboard
@@ -61,11 +67,17 @@ export default async function DashboardLayout({
               </Link>
             </nav>
           </div>
-          <form action={handleSignOut}>
-            <Button variant="outline" size="sm" type="submit">
-              Sign Out
-            </Button>
-          </form>
+          {profile && (
+            <ProfileDropdown
+              profile={profile}
+              onSignOut={async () => {
+                'use server';
+                const supabase = await createClient();
+                await supabase.auth.signOut();
+                redirect('/login');
+              }}
+            />
+          )}
         </div>
       </header>
 

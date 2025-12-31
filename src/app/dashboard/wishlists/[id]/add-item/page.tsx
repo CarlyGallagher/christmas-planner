@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Upload, X } from 'lucide-react';
+import { ArrowLeft, Upload, X, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { extractProductFromUrl, detectPlatform } from '@/lib/productApi';
 
 export default function AddItemPage() {
   const params = useParams();
@@ -23,6 +24,8 @@ export default function AddItemPage() {
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [urlValue, setUrlValue] = useState('');
   const supabase = createClient();
 
   const {
@@ -73,6 +76,55 @@ export default function AddItemPage() {
     setValue('image', undefined);
   };
 
+  const handleAutoFill = async () => {
+    if (!urlValue || !urlValue.startsWith('http')) {
+      setError('Please enter a valid URL');
+      return;
+    }
+
+    setExtracting(true);
+    setError(null);
+
+    try {
+      const productData = await extractProductFromUrl(urlValue);
+
+      console.log('Product data received:', productData);
+
+      if (productData) {
+        // Auto-fill the form fields
+        if (productData.title) {
+          setValue('name', productData.title);
+        }
+        if (productData.description) {
+          setValue('description', productData.description);
+        }
+        if (productData.price) {
+          console.log('Setting price to:', productData.price);
+          setValue('price', productData.price);
+        }
+        if (productData.imageUrl) {
+          console.log('Setting image to:', productData.imageUrl);
+          setImagePreview(productData.imageUrl);
+        }
+
+        const platform = detectPlatform(urlValue);
+        const successMessage = platform
+          ? `Successfully extracted product from ${platform}!`
+          : 'Successfully extracted product information!';
+
+        // Show success message briefly
+        console.log(successMessage);
+      } else {
+        setError('Could not extract product information from this URL. Please fill in the details manually.');
+      }
+    } catch (err) {
+      console.error('Auto-fill error:', err);
+      setError('Failed to extract product information. Please fill in the details manually.');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   const onSubmit = async (data: WishlistItemFormData) => {
     setLoading(true);
     setError(null);
@@ -106,8 +158,12 @@ export default function AddItemPage() {
 
     let imageUrl = null;
 
-    // Upload image if provided
-    if (imageFile) {
+    // If we have an image URL from auto-fill (not a file), use it directly
+    if (imagePreview && !imageFile) {
+      imageUrl = imagePreview;
+    }
+    // Upload image if provided as a file
+    else if (imageFile) {
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${user.id}/${wishlistId}/${Date.now()}.${fileExt}`;
 
@@ -215,13 +271,33 @@ export default function AddItemPage() {
 
             <div className="space-y-2">
               <Label htmlFor="url">Product URL (optional)</Label>
-              <Input
-                id="url"
-                type="text"
-                placeholder="https://example.com/product"
-                {...register('url')}
-                disabled={loading}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="url"
+                  type="text"
+                  placeholder="https://amazon.com/product or other store URL"
+                  {...register('url')}
+                  value={urlValue}
+                  onChange={(e) => {
+                    setUrlValue(e.target.value);
+                    setValue('url', e.target.value);
+                  }}
+                  disabled={loading || extracting}
+                />
+                <Button
+                  type="button"
+                  onClick={handleAutoFill}
+                  disabled={loading || extracting || !urlValue}
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {extracting ? 'Extracting...' : 'Auto-fill'}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Paste a product URL from Amazon, Target, Walmart, or other stores and click Auto-fill to automatically populate the details
+              </p>
               {errors.url && (
                 <p className="text-sm text-red-500">{errors.url.message}</p>
               )}

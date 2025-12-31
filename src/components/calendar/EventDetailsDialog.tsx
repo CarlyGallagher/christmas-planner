@@ -114,10 +114,6 @@ export function EventDetailsDialog({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this event?')) {
-      return;
-    }
-
     setLoading(true);
 
     const { error: deleteError } = await supabase

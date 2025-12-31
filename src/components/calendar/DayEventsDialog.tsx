@@ -52,10 +52,6 @@ export function DayEventsDialog({
   };
 
   const handleDelete = async (event: CalendarEvent) => {
-    if (!confirm(`Are you sure you want to delete "${event.title}"?`)) {
-      return;
-    }
-
     setDeletingId(event.id);
 
     const { error } = await supabase

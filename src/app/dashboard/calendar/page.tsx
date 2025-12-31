@@ -10,8 +10,9 @@ import type { CalendarEvent } from '@/types';
 import { CreateEventDialog } from '@/components/calendar/CreateEventDialog';
 import { EventDetailsDialog } from '@/components/calendar/EventDetailsDialog';
 import { DayEventsDialog } from '@/components/calendar/DayEventsDialog';
-import { CalendarViewSettings, CalendarView } from '@/components/calendar/CalendarViewSettings';
+import { CalendarViewSettings, CalendarView, QuickViewPosition } from '@/components/calendar/CalendarViewSettings';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { getUSHolidays, getHolidayForDate, type Holiday } from '@/lib/holidays';
 
 export default function CalendarPage() {
   const { getPreference, updatePreferences, loading: prefsLoading } = useUserPreferences();
@@ -24,6 +25,7 @@ export default function CalendarPage() {
     return new Date(today.setDate(diff));
   });
   const [calendarView, setCalendarView] = useState<CalendarView>('year');
+  const [quickViewPosition, setQuickViewPosition] = useState<QuickViewPosition>('top');
   const [showViewSettings, setShowViewSettings] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,17 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDayEventsDialog, setShowDayEventsDialog] = useState(false);
   const [dayEvents, setDayEvents] = useState<CalendarEvent[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const supabase = createClient();
+
+  // Fetch holidays for the current year
+  useEffect(() => {
+    async function loadHolidays() {
+      const fetchedHolidays = await getUSHolidays(currentYear);
+      setHolidays(fetchedHolidays);
+    }
+    loadHolidays();
+  }, [currentYear]);
 
   useEffect(() => {
     fetchEvents();
@@ -52,11 +64,13 @@ export default function CalendarPage() {
     }
   }, [searchQuery, events]);
 
-  // Load calendar view preference when preferences are ready
+  // Load calendar view and quick view position preferences when ready
   useEffect(() => {
     if (!prefsLoading) {
       const savedView = getPreference<CalendarView>('calendarView', 'year');
+      const savedQuickView = getPreference<QuickViewPosition>('quickViewPosition', 'top');
       setCalendarView(savedView);
+      setQuickViewPosition(savedQuickView);
     }
   }, [prefsLoading]);
 
@@ -66,6 +80,21 @@ export default function CalendarPage() {
       updatePreferences({ calendarView });
     }
   }, [calendarView]);
+
+  // Save quick view position preference to database and localStorage
+  useEffect(() => {
+    if (!prefsLoading) {
+      updatePreferences({ quickViewPosition });
+    }
+  }, [quickViewPosition]);
+
+  // Update dayEvents when events change and dialog is open
+  useEffect(() => {
+    if (showDayEventsDialog && selectedDate) {
+      const updatedDayEvents = getEventsForDate(selectedDate);
+      setDayEvents(updatedDayEvents);
+    }
+  }, [events, showDayEventsDialog, selectedDate]);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -202,6 +231,7 @@ export default function CalendarPage() {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, monthIndex, day);
       const dayEvents = getEventsForDate(date);
+      const holiday = getHolidayForDate(date, holidays);
       const isToday =
         date.getDate() === new Date().getDate() &&
         date.getMonth() === new Date().getMonth() &&
@@ -223,6 +253,11 @@ export default function CalendarPage() {
             {day}
           </div>
           <div className="space-y-1 pointer-events-none overflow-hidden max-h-[calc(100%-2rem)]">
+            {holiday && (
+              <div className="text-xs font-semibold text-red-600 truncate leading-tight px-1">
+                {holiday.name}
+              </div>
+            )}
             {dayEvents.length > 0 && (
               <>
                 {dayEvents.slice(0, 1).map((event) => (
@@ -290,6 +325,7 @@ export default function CalendarPage() {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentYear, monthIndex, day);
       const dayEvents = getEventsForDate(date);
+      const holiday = getHolidayForDate(date, holidays);
       const isToday =
         date.getDate() === new Date().getDate() &&
         date.getMonth() === new Date().getMonth() &&
@@ -307,8 +343,15 @@ export default function CalendarPage() {
             setShowDayEventsDialog(true);
           }}
         >
-          <div className={`text-sm font-semibold ${isToday ? 'text-blue-600' : ''}`}>
-            {day}
+          <div className="flex items-start gap-1">
+            <div className={`text-sm font-semibold ${isToday ? 'text-blue-600' : ''}`}>
+              {day}
+            </div>
+            {holiday && (
+              <div className="text-xs font-semibold text-red-600 truncate flex-1 leading-tight">
+                {holiday.name}
+              </div>
+            )}
           </div>
           <div className="space-y-0.5 mt-1 pointer-events-none overflow-hidden max-h-[calc(100%-1.5rem)]">
             {dayEvents.length > 0 && (
@@ -429,6 +472,63 @@ export default function CalendarPage() {
     setCurrentWeekStart(weekStart);
   };
 
+  const renderQuickView = () => {
+    if (quickViewPosition === 'off') return null;
+
+    const now = new Date();
+    const upcomingEvents = events
+      .filter(event => new Date(event.start_date) >= now)
+      .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+      .slice(0, 5);
+
+    return (
+      <Card className={quickViewPosition === 'left' || quickViewPosition === 'right' ? 'h-fit sticky top-6' : ''}>
+        <CardHeader>
+          <CardTitle className="text-lg">Upcoming Events</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {upcomingEvents.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">
+              No upcoming events
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {upcomingEvents.map(event => (
+                <div
+                  key={event.id}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border"
+                  onClick={() => setSelectedEvent(event)}
+                >
+                  <div
+                    className="w-1 h-full rounded-full flex-shrink-0"
+                    style={{ backgroundColor: event.color || '#3b82f6', minHeight: '40px' }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm truncate">{event.title}</div>
+                    <div className="text-xs text-gray-600">
+                      {new Date(event.start_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                    {event.description && (
+                      <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+                        {event.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -508,16 +608,46 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Calendar Grid */}
-      {calendarView === 'year' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {Array.from({ length: 12 }, (_, i) => renderMonth(i))}
+      {/* Quick View - Top Position */}
+      {quickViewPosition === 'top' && renderQuickView()}
+
+      {/* Calendar Grid with Side Panels */}
+      {(quickViewPosition === 'left' || quickViewPosition === 'right') ? (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {quickViewPosition === 'left' && (
+            <div className="lg:col-span-1">
+              {renderQuickView()}
+            </div>
+          )}
+          <div className={quickViewPosition === 'left' || quickViewPosition === 'right' ? 'lg:col-span-3' : ''}>
+            {calendarView === 'year' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {Array.from({ length: 12 }, (_, i) => renderMonth(i))}
+              </div>
+            )}
+            {calendarView === 'month' && renderSingleMonth(currentMonth, currentYear)}
+            {calendarView === 'week' && renderWeekView()}
+          </div>
+          {quickViewPosition === 'right' && (
+            <div className="lg:col-span-1">
+              {renderQuickView()}
+            </div>
+          )}
         </div>
+      ) : (
+        <>
+          {calendarView === 'year' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 12 }, (_, i) => renderMonth(i))}
+            </div>
+          )}
+          {calendarView === 'month' && renderSingleMonth(currentMonth, currentYear)}
+          {calendarView === 'week' && renderWeekView()}
+        </>
       )}
 
-      {calendarView === 'month' && renderSingleMonth(currentMonth, currentYear)}
-
-      {calendarView === 'week' && renderWeekView()}
+      {/* Quick View - Bottom Position */}
+      {quickViewPosition === 'bottom' && renderQuickView()}
 
       {/* Dialogs */}
       {showCreateDialog && (
@@ -562,6 +692,8 @@ export default function CalendarPage() {
         onOpenChange={setShowViewSettings}
         currentView={calendarView}
         onViewChange={setCalendarView}
+        quickViewPosition={quickViewPosition}
+        onQuickViewPositionChange={setQuickViewPosition}
       />
     </div>
   );

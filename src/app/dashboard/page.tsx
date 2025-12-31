@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { WeekView } from '@/components/dashboard/WeekView';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -28,6 +29,15 @@ export default async function DashboardPage() {
 
   const totalWishlists = (ownedWishlists?.length || 0) + (sharedWishlists?.length || 0);
 
+  // Get upcoming events count (events that haven't ended yet)
+  const now = new Date().toISOString();
+  const { data: upcomingEvents } = await supabase
+    .from('calendar_events')
+    .select('id')
+    .or(`start_date.gte.${now},end_date.gte.${now}`);
+
+  const upcomingEventsCount = upcomingEvents?.length || 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -35,7 +45,7 @@ export default async function DashboardPage() {
         <p className="text-gray-600">Here&apos;s your Christmas planning dashboard</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Link href="/dashboard/wishlists">
           <Card className="cursor-pointer hover:bg-gray-50 transition-colors">
             <CardHeader>
@@ -49,42 +59,21 @@ export default async function DashboardPage() {
           </Card>
         </Link>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Events</CardTitle>
-            <CardDescription>Upcoming Christmas events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">0</p>
-            <p className="text-sm text-gray-600">Upcoming events</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Reminders</CardTitle>
-            <CardDescription>Active notifications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">0</p>
-            <p className="text-sm text-gray-600">Pending reminders</p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/calendar">
+          <Card className="cursor-pointer hover:bg-gray-50 transition-colors">
+            <CardHeader>
+              <CardTitle>Events</CardTitle>
+              <CardDescription>Upcoming Christmas events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{upcomingEventsCount}</p>
+              <p className="text-sm text-gray-600">Upcoming events</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Get started with your planning</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-gray-600">
-            🎁 Create your first wishlist<br />
-            📅 Add a Christmas event to your calendar<br />
-            👨‍👩‍👧‍👦 Share your plans with family
-          </p>
-        </CardContent>
-      </Card>
+      <WeekView />
     </div>
   );
 }

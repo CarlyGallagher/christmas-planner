@@ -23,82 +23,125 @@ export function useFriends() {
     // Get accepted friends (where user is either user_id or friend_id)
     const { data: acceptedFriends, error: friendsError } = await supabase
       .from('friends')
-      .select(`
-        *,
-        friend_profile:profiles!friends_friend_id_fkey(
-          id,
-          display_name,
-          avatar_url,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('status', 'accepted')
       .eq('user_id', user.id);
 
     // Also get friendships where current user is the friend_id
     const { data: reverseFriends, error: reverseFriendsError } = await supabase
       .from('friends')
-      .select(`
-        *,
-        friend_profile:profiles!friends_user_id_fkey(
-          id,
-          display_name,
-          avatar_url,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('status', 'accepted')
       .eq('friend_id', user.id);
+
+    // Fetch profiles for accepted friends
+    let acceptedWithProfiles: FriendWithProfile[] = [];
+    if (acceptedFriends && acceptedFriends.length > 0) {
+      const friendIds = acceptedFriends.map(f => f.friend_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', friendIds);
+
+      acceptedWithProfiles = acceptedFriends.map(friend => ({
+        ...friend,
+        friend_profile: profiles?.find(p => p.id === friend.friend_id) || {
+          id: friend.friend_id,
+          display_name: 'Unknown User',
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+        },
+      })) as FriendWithProfile[];
+    }
+
+    // Fetch profiles for reverse friends
+    let reverseWithProfiles: FriendWithProfile[] = [];
+    if (reverseFriends && reverseFriends.length > 0) {
+      const userIds = reverseFriends.map(f => f.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+      reverseWithProfiles = reverseFriends.map(friend => ({
+        ...friend,
+        friend_profile: profiles?.find(p => p.id === friend.user_id) || {
+          id: friend.user_id,
+          display_name: 'Unknown User',
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+        },
+      })) as FriendWithProfile[];
+    }
 
     // Get pending requests received (where user is friend_id)
     const { data: pending, error: pendingError } = await supabase
       .from('friends')
-      .select(`
-        *,
-        friend_profile:profiles!friends_user_id_fkey(
-          id,
-          display_name,
-          avatar_url,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('status', 'pending')
       .eq('friend_id', user.id);
+
+    // Fetch profiles for pending requests
+    let pendingWithProfiles: FriendWithProfile[] = [];
+    if (pending && pending.length > 0) {
+      const userIds = pending.map(f => f.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+      pendingWithProfiles = pending.map(friend => ({
+        ...friend,
+        friend_profile: profiles?.find(p => p.id === friend.user_id) || {
+          id: friend.user_id,
+          display_name: 'Unknown User',
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+        },
+      })) as FriendWithProfile[];
+    }
 
     // Get pending requests sent (where user is user_id)
     const { data: sent, error: sentError } = await supabase
       .from('friends')
-      .select(`
-        *,
-        friend_profile:profiles!friends_friend_id_fkey(
-          id,
-          display_name,
-          avatar_url,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('status', 'pending')
       .eq('user_id', user.id);
 
-    if (!friendsError && acceptedFriends) {
-      const combined = [...acceptedFriends];
-      if (!reverseFriendsError && reverseFriends) {
-        // For reverse friends, swap the user_id and friend_id for consistency
-        const normalizedReverse = reverseFriends.map(f => ({
-          ...f,
-          friend_profile: f.friend_profile,
-        }));
-        combined.push(...normalizedReverse);
+    // Fetch profiles for sent requests
+    let sentWithProfiles: FriendWithProfile[] = [];
+    if (sent && sent.length > 0) {
+      const friendIds = sent.map(f => f.friend_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', friendIds);
+
+      sentWithProfiles = sent.map(friend => ({
+        ...friend,
+        friend_profile: profiles?.find(p => p.id === friend.friend_id) || {
+          id: friend.friend_id,
+          display_name: 'Unknown User',
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+        },
+      })) as FriendWithProfile[];
+    }
+
+    if (!friendsError) {
+      const combined = [...acceptedWithProfiles];
+      if (!reverseFriendsError) {
+        combined.push(...reverseWithProfiles);
       }
-      setFriends(combined as FriendWithProfile[]);
+      setFriends(combined);
     }
 
-    if (!pendingError && pending) {
-      setPendingRequests(pending as FriendWithProfile[]);
+    if (!pendingError && pendingWithProfiles) {
+      setPendingRequests(pendingWithProfiles);
     }
 
-    if (!sentError && sent) {
-      setSentRequests(sent as FriendWithProfile[]);
+    if (!sentError && sentWithProfiles) {
+      setSentRequests(sentWithProfiles);
     }
 
     setLoading(false);

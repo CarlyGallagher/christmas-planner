@@ -38,11 +38,18 @@ export function useWishlists() {
       .eq('shared_with_user_id', user.id);
 
     if (!shareError && shareData && shareData.length > 0) {
-      // Then fetch the actual wishlist data using those IDs
+      // Then fetch the actual wishlist data using those IDs, including owner profile
       const wishlistIds = shareData.map(share => share.wishlist_id);
       const { data: sharedData, error: sharedError } = await supabase
         .from('wishlists')
-        .select('*')
+        .select(`
+          *,
+          owner_profile:profiles!wishlists_user_id_fkey(
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
         .in('id', wishlistIds)
         .order('created_at', { ascending: false });
 

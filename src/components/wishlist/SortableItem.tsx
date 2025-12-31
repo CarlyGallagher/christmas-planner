@@ -43,7 +43,7 @@ export function SortableItem({ item, isOwner, hidePurchased, onUpdate, rank }: S
       )}
       <div className="relative flex-1">
         {isOwner && (
-          <div className="absolute top-2 left-2 bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold z-10">
+          <div className="absolute -top-2 -left-2 bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold z-10 shadow-md border-2 border-white">
             {rank}
           </div>
         )}

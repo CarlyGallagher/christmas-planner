@@ -24,6 +24,7 @@ export interface Wishlist {
   share_token?: string | null;
   created_at: string;
   updated_at: string;
+  owner_profile?: Profile;
 }
 
 export interface WishlistItem {

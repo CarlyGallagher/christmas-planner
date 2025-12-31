@@ -90,7 +90,6 @@ export default function WishlistsPage() {
               <UserPlus className="h-6 w-6" />
               Shared With Me
             </h2>
-            <p className="text-gray-600">Wishlists others have shared with you</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -102,7 +101,9 @@ export default function WishlistsPage() {
                       <div className="flex-1">
                         <CardTitle className="text-xl">{wishlist.name}</CardTitle>
                         <CardDescription className="mt-1">
-                          Shared wishlist
+                          {wishlist.owner_profile?.display_name
+                            ? `${wishlist.owner_profile.display_name}'s Wishlist`
+                            : 'Shared wishlist'}
                         </CardDescription>
                       </div>
                       <div title="Shared with you">

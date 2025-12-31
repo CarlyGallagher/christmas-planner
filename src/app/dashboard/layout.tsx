@@ -51,10 +51,10 @@ export default async function DashboardLayout({
               <Link href="/dashboard/calendar" className="text-sm font-medium hover:text-green-600">
                 Calendar
               </Link>
-              <Link href="/dashboard/friends" className="text-sm font-medium hover:text-green-600 relative">
+              <Link href="/dashboard/friends" className="text-sm font-medium hover:text-green-600 flex items-center gap-1">
                 Friends
-                {pendingRequestsCount && pendingRequestsCount > 0 && (
-                  <span className="absolute -top-1 -right-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {pendingRequestsCount !== null && pendingRequestsCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
                     {pendingRequestsCount}
                   </span>
                 )}

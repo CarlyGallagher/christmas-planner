@@ -105,10 +105,6 @@ export default function WishlistDetailPage() {
   };
 
   const handleDeleteWishlist = async () => {
-    if (!confirm('Are you sure you want to delete this wishlist? This action cannot be undone.')) {
-      return;
-    }
-
     setDeleting(true);
 
     const { error } = await supabase

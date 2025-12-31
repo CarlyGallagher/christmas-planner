@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface UserPreferences {
   calendarView?: 'year' | 'month' | 'week';
+  quickViewPosition?: 'top' | 'bottom' | 'left' | 'right' | 'off';
   [key: string]: any;
 }
 

@@ -84,6 +84,16 @@ export function CreateEventDialog({
       return;
     }
 
+    // Validate that the event is not in the past
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    const now = new Date();
+
+    if (startDateTime < now) {
+      setError('Cannot create events in the past. Please select a future date and time.');
+      setLoading(false);
+      return;
+    }
+
     // Get or create a default calendar for the user
     let calendarId: string;
     const { data: calendars } = await supabase
@@ -114,7 +124,7 @@ export function CreateEventDialog({
       calendarId = newCalendar.id;
     }
 
-    const eventStartDate = new Date(`${startDate}T${startTime}`).toISOString();
+    const eventStartDate = startDateTime.toISOString();
     const eventEndDate = isMultiDay
       ? new Date(`${endDate}T${endTime}`).toISOString()
       : new Date(`${startDate}T${endTime}`).toISOString();

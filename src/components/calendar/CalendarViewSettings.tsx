@@ -13,12 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Calendar as CalendarIcon, LayoutGrid, Rows, Columns } from 'lucide-react';
 
 export type CalendarView = 'year' | 'month' | 'week';
+export type QuickViewPosition = 'top' | 'bottom' | 'left' | 'right' | 'off';
 
 interface CalendarViewSettingsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentView: CalendarView;
   onViewChange: (view: CalendarView) => void;
+  quickViewPosition: QuickViewPosition;
+  onQuickViewPositionChange: (position: QuickViewPosition) => void;
 }
 
 export function CalendarViewSettings({
@@ -26,11 +29,15 @@ export function CalendarViewSettings({
   onOpenChange,
   currentView,
   onViewChange,
+  quickViewPosition,
+  onQuickViewPositionChange,
 }: CalendarViewSettingsProps) {
   const [selectedView, setSelectedView] = useState<CalendarView>(currentView);
+  const [selectedQuickView, setSelectedQuickView] = useState<QuickViewPosition>(quickViewPosition);
 
   const handleSave = () => {
     onViewChange(selectedView);
+    onQuickViewPositionChange(selectedQuickView);
     onOpenChange(false);
   };
 
@@ -55,59 +62,105 @@ export function CalendarViewSettings({
     },
   ];
 
+  const quickViewOptions = [
+    { value: 'top' as QuickViewPosition, label: 'Top', description: 'Above the calendar' },
+    { value: 'bottom' as QuickViewPosition, label: 'Bottom', description: 'Below the calendar' },
+    { value: 'left' as QuickViewPosition, label: 'Left', description: 'Left side panel' },
+    { value: 'right' as QuickViewPosition, label: 'Right', description: 'Right side panel' },
+    { value: 'off' as QuickViewPosition, label: 'Off', description: 'Hide quick view' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Calendar View</DialogTitle>
+          <DialogTitle>Calendar Settings</DialogTitle>
           <DialogDescription>
-            Choose how you want to view your calendar
+            Customize your calendar view and quick view panel
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          {viewOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <div
-                key={option.value}
-                className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                  selectedView === option.value
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedView(option.value)}
-              >
-                <div className="flex items-start gap-3">
+        <div className="space-y-6">
+          {/* Calendar View Options */}
+          <div>
+            <h3 className="font-semibold mb-3">Calendar View</h3>
+            <div className="space-y-2">
+              {viewOptions.map((option) => {
+                const Icon = option.icon;
+                return (
                   <div
-                    className={`p-2 rounded-lg ${
+                    key={option.value}
+                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
                       selectedView === option.value
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
+                    onClick={() => setSelectedView(option.value)}
                   >
-                    <Icon className="h-5 w-5" />
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`p-2 rounded-lg ${
+                          selectedView === option.value
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Label className="font-semibold cursor-pointer text-sm">
+                            {option.label}
+                          </Label>
+                          {selectedView === option.value && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Label className="font-semibold cursor-pointer">
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick View Position Options */}
+          <div>
+            <h3 className="font-semibold mb-3">Quick View Position</h3>
+            <div className="space-y-2">
+              {quickViewOptions.map((option) => (
+                <div
+                  key={option.value}
+                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                    selectedQuickView === option.value
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedQuickView(option.value)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-semibold cursor-pointer text-sm">
                         {option.label}
                       </Label>
-                      {selectedView === option.value && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                      )}
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        {option.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {option.description}
-                    </p>
+                    {selectedQuickView === option.value && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-4 border-t">
           <Button onClick={handleSave} className="flex-1">
             Apply
           </Button>

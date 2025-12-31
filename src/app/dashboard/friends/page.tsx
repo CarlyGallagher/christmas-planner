@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 import { Users, UserPlus, UserCheck, UserX, Search } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function FriendsPage() {
+  const router = useRouter();
   const {
     friends,
     pendingRequests,
@@ -18,6 +20,16 @@ export default function FriendsPage() {
     removeFriend,
     cancelFriendRequest,
   } = useFriends();
+
+  const handleAcceptRequest = async (requestId: string) => {
+    await acceptFriendRequest(requestId);
+    router.refresh(); // Refresh server components to update badge count
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    await declineFriendRequest(requestId);
+    router.refresh(); // Refresh server components to update badge count
+  };
 
   if (loading) {
     return (
@@ -84,7 +96,7 @@ export default function FriendsPage() {
                 </CardHeader>
                 <CardContent className="flex gap-2">
                   <Button
-                    onClick={() => acceptFriendRequest(request.id)}
+                    onClick={() => handleAcceptRequest(request.id)}
                     size="sm"
                     className="flex-1"
                   >
@@ -92,7 +104,7 @@ export default function FriendsPage() {
                     Accept
                   </Button>
                   <Button
-                    onClick={() => declineFriendRequest(request.id)}
+                    onClick={() => handleDeclineRequest(request.id)}
                     variant="outline"
                     size="sm"
                     className="flex-1"

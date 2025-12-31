@@ -5,6 +5,9 @@
 DROP POLICY IF EXISTS "Users can insert their own wishlists" ON wishlists;
 DROP POLICY IF EXISTS "Users can update their own wishlists" ON wishlists;
 DROP POLICY IF EXISTS "Users can delete their own wishlists" ON wishlists;
+DROP POLICY IF EXISTS "users_insert_own_wishlists" ON wishlists;
+DROP POLICY IF EXISTS "users_update_own_wishlists" ON wishlists;
+DROP POLICY IF EXISTS "users_delete_own_wishlists" ON wishlists;
 
 -- INSERT: Users can create their own wishlists
 CREATE POLICY "users_insert_own_wishlists"

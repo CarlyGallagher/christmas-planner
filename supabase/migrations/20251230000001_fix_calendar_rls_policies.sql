@@ -5,6 +5,8 @@
 DROP POLICY IF EXISTS "Users can view their own calendars" ON calendars;
 DROP POLICY IF EXISTS "Users can view events from accessible calendars" ON calendar_events;
 DROP POLICY IF EXISTS "Users can view shares for accessible calendars" ON calendar_shares;
+DROP POLICY IF EXISTS "users_view_owned_and_shared_calendars" ON calendars;
+DROP POLICY IF EXISTS "users_view_events_from_accessible_calendars" ON calendar_events;
 
 -- STEP 1: Make calendar_shares readable by all authenticated users
 -- This breaks the circular dependency

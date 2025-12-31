@@ -44,6 +44,9 @@ export default async function DashboardLayout({
               <Link href="/dashboard/calendar" className="text-sm font-medium hover:text-green-600">
                 Calendar
               </Link>
+              <Link href="/dashboard/friends" className="text-sm font-medium hover:text-green-600">
+                Friends
+              </Link>
             </nav>
           </div>
           <form action={handleSignOut}>

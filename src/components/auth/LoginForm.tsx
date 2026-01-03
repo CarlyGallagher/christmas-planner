@@ -47,6 +47,14 @@ export function LoginForm() {
       return;
     }
 
+    // Ensure profile exists (fallback for users who signed up before migration)
+    try {
+      await fetch('/api/create-profile', { method: 'POST' });
+    } catch (e) {
+      // Ignore errors - profile might already exist
+      console.log('Profile creation fallback:', e);
+    }
+
     router.push('/dashboard');
     router.refresh();
   };

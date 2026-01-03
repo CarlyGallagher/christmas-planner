@@ -54,6 +54,14 @@ export function SignupForm() {
       return;
     }
 
+    // Ensure profile is created (fallback if trigger doesn't work)
+    try {
+      await fetch('/api/create-profile', { method: 'POST' });
+    } catch (e) {
+      // Ignore errors - profile might already exist from trigger
+      console.log('Profile creation fallback:', e);
+    }
+
     // Redirect to dashboard (profile will be auto-created by trigger)
     router.push('/dashboard');
     router.refresh();
